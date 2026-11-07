@@ -120,7 +120,10 @@ class EventImageConverter(object):
             logger.error(e)
             raise NotImplementedError(e)
         if sigma > 0:
-            image = gaussian_filter(image, sigma)
+            # Blur spatial dimensions only, not batch or polarity axes.
+            spatial_sigma = np.zeros(image.ndim)
+            spatial_sigma[-2:] = sigma
+            image = gaussian_filter(image, spatial_sigma)
         return image
 
     def create_image_from_events_tensor(
