@@ -690,11 +690,16 @@ def calculate_flow_error_tensor(
     # Angular error
     u, v = pred_masked[:, 0, ...], pred_masked[:, 1, ...]
     u_gt, v_gt = gt_masked[:, 0, ...], gt_masked[:, 1, ...]
+    # Roundoff can move valid cosines outside the arccos domain.
     errors["AE"] = torch.mean(
         torch.sum(
             torch.acos(
-                (1.0 + u * u_gt + v * v_gt)
-                / (torch.sqrt(1 + u * u + v * v) * torch.sqrt(1 + u_gt * u_gt + v_gt * v_gt))
+                torch.clamp(
+                    (1.0 + u * u_gt + v * v_gt)
+                    / (torch.sqrt(1 + u * u + v * v) * torch.sqrt(1 + u_gt * u_gt + v_gt * v_gt)),
+                    min=-1.0,
+                    max=1.0,
+                )
             ),
             dim=(1, 2),
         )
@@ -745,11 +750,16 @@ def calculate_flow_error_numpy(
     # Angular error
     u, v = pred_masked[:, 0, ...], pred_masked[:, 1, ...]
     u_gt, v_gt = gt_masked[:, 0, ...], gt_masked[:, 1, ...]
+    # Roundoff can move valid cosines outside the arccos domain.
     errors["AE"] = np.mean(
         np.sum(
             np.arccos(
-                (1.0 + u * u_gt + v * v_gt)
-                / (np.sqrt(1 + u * u + v * v) * np.sqrt(1 + u_gt * u_gt + v_gt * v_gt))
+                np.clip(
+                    (1.0 + u * u_gt + v * v_gt)
+                    / (np.sqrt(1 + u * u + v * v) * np.sqrt(1 + u_gt * u_gt + v_gt * v_gt)),
+                    -1.0,
+                    1.0,
+                )
             ),
             axis=(1, 2),
         )
